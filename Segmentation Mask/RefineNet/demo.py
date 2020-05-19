@@ -1,18 +1,22 @@
+#re :regular expression operation 
 import re
+#openCv to deal with images 
 import cv2
 import time
+#file operations
 import os,shutil
+#provides information about constants, functions and methods of the Python interpreter
 import sys
 import numpy as np
 import tensorflow as tf
 slim = tf.contrib.slim 
-
+#returns current working directory of a process.
 sys.path.append(os.getcwd())
 from nets import model as model
 from matplotlib import pyplot as plt
 from utils.pascal_voc import pascal_segmentation_lut
 from utils.visualization import visualize_segmentation_adaptive
-
+#put flags (name,default values)
 tf.app.flags.DEFINE_string('test_data_path', 'demo', '')
 tf.app.flags.DEFINE_string('gpu_list', '0', '')
 tf.app.flags.DEFINE_integer('num_classes', 21, '')
@@ -25,6 +29,7 @@ FLAGS = tf.app.flags.FLAGS
 def get_images():
     files = []
     exts = ['jpg', 'png', 'jpeg', 'JPG']
+    # generates the file names in a directory tree by walking the tree 
     for parent, dirnames, filenames in os.walk(FLAGS.test_data_path):
         for filename in filenames:
             for ext in exts:
@@ -53,20 +58,26 @@ def resize_image(im, size=32, max_side_len=2400):
 
 def main(argv=None):
     import os
+    #return true if the path exisit
     if os.path.exists(FLAGS.result_path):
+        #Delete an entire directory tree
         shutil.rmtree(FLAGS.result_path)
+        #make new directory
     os.makedirs(FLAGS.result_path)
-
+#control available gpu
     os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.gpu_list
+    #return table with number and corresponding class names
     pascal_voc_lut = pascal_segmentation_lut()
 
     with tf.get_default_graph().as_default():
         input_images = tf.placeholder(tf.float32, shape=[None, None, None, 3], name='input_images')
+        #make a new varible or override if exist
         global_step = tf.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False)
 
         logits = model.model(input_images, is_training=False)
         pred = tf.argmax(logits, dimension=3)
 
+        #maintains moving averages of variables by employing an exponential decay.
         variable_averages = tf.train.ExponentialMovingAverage(0.997, global_step)
         saver = tf.train.Saver(variable_averages.variables_to_restore())
 
